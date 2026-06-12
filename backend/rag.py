@@ -35,10 +35,29 @@ embeddings = GoogleGenerativeAIEmbeddings(
 )
 
 # Vector Store
-vectorstore = FAISS.from_texts(
-    chunks,
-    embedding=embeddings
-)
+INDEX_PATH = "../faiss_index"
+FAISS_FILE = os.path.join(INDEX_PATH, "index.faiss")
+
+if os.path.exists(FAISS_FILE):
+    print("Loading existing FAISS index...")
+
+    vectorstore = FAISS.load_local(
+        INDEX_PATH,
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
+else:
+    print("Creating new FAISS index...")
+
+    vectorstore = FAISS.from_texts(
+        chunks,
+        embedding=embeddings
+    )
+
+    vectorstore.save_local(INDEX_PATH)
+
+    print("FAISS index saved.")
 
 def ask_question(query):
     docs = vectorstore.similarity_search(query, k=2)
