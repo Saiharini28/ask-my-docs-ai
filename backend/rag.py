@@ -10,45 +10,35 @@ import os
 
 load_dotenv()
 
-# Read PDF
-reader = PdfReader("../docs/UI_UX_Resume.pdf")
+INDEX_PATH = "../faiss_index"
 
-text = ""
-
-for page in reader.pages:
-    page_text = page.extract_text()
-    if page_text:
-        text += page_text
-
-# Chunking
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=200,
-    chunk_overlap=50
-)
-
-chunks = splitter.split_text(text)
-
-# Embeddings
 embeddings = GoogleGenerativeAIEmbeddings(
     model="gemini-embedding-001",
     google_api_key=os.getenv("GEMINI_API_KEY")
 )
 
-# Vector Store
-INDEX_PATH = "../faiss_index"
-FAISS_FILE = os.path.join(INDEX_PATH, "index.faiss")
 
-if os.path.exists(FAISS_FILE):
-    print("Loading existing FAISS index...")
+def process_pdf(pdf_path):
+    """
+    Read PDF -> Chunk -> Embed -> Save FAISS
+    """
 
-    vectorstore = FAISS.load_local(
-        INDEX_PATH,
-        embeddings,
-        allow_dangerous_deserialization=True
+    reader = PdfReader(pdf_path)
+
+    text = ""
+
+    for page in reader.pages:
+        page_text = page.extract_text()
+
+        if page_text:
+            text += page_text
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=200,
+        chunk_overlap=50
     )
 
-else:
-    print("Creating new FAISS index...")
+    chunks = splitter.split_text(text)
 
     vectorstore = FAISS.from_texts(
         chunks,
@@ -57,10 +47,36 @@ else:
 
     vectorstore.save_local(INDEX_PATH)
 
-    print("FAISS index saved.")
+    print("FAISS index saved successfully.")
+
+
+def load_vectorstore():
+
+    faiss_file = os.path.join(
+        INDEX_PATH,
+        "index.faiss"
+    )
+
+    if not os.path.exists(faiss_file):
+        raise Exception(
+            "No FAISS index found. Upload a PDF first."
+        )
+
+    return FAISS.load_local(
+        INDEX_PATH,
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
 
 def ask_question(query):
-    docs = vectorstore.similarity_search(query, k=2)
+
+    vectorstore = load_vectorstore()
+
+    docs = vectorstore.similarity_search(
+        query,
+        k=2
+    )
 
     context = "\n".join(
         [doc.page_content for doc in docs]
@@ -84,3 +100,21 @@ Question:
     response = llm.invoke(prompt)
 
     return response.content
+
+
+# Initial PDF setup (first run only)
+
+faiss_file = os.path.join(
+    INDEX_PATH,
+    "index.faiss"
+)
+
+if not os.path.exists(faiss_file):
+
+    print("Creating initial FAISS index...")
+
+    process_pdf("../docs/UI_UX_Resume.pdf")
+
+else:
+
+    print("Loading existing FAISS index...")
