@@ -59,5 +59,9 @@ def upload_pdf():
         "message": "PDF uploaded and processed successfully"
     })
 
+@app.route("/")
+def home():
+    return "Ask My Docs AI Backend Running!"
+
 if __name__ == "__main__":
     app.run(debug=True)
