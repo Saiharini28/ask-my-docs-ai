@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask My Docs AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+    <div class="sidebar">
+
+        <h2>Ask My Docs AI</h2>
+
+        <button class="new-chat-btn" onclick="newChat()">
+            + New Chat
+        </button>
+
+        <input
+            type="file"
+            id="pdfFile"
+            accept=".pdf"
+        >
+
+        <button onclick="uploadPDF()">
+            Upload PDF
+        </button>
+
+    </div>
+
+    <div class="main">
+
+        <div id="chatBox" class="chat-box">
+
+            <div class="welcome">
+                Upload a PDF and start asking!!
+            </div>
+
+        </div>
+
+        <div class="input-area">
+
+            <input
+                type="text"
+                id="question"
+                placeholder="Ask anything..."
+            >
+
+            <button onclick="sendMessage()">
+                Send
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
