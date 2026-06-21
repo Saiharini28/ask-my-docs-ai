@@ -63,5 +63,15 @@ def upload_pdf():
 def home():
     return "Ask My Docs AI Backend Running!"
 
+@app.route("/documents", methods=["GET"])
+def get_documents():
+
+    upload_folder = "../uploads"
+
+    files = os.listdir(upload_folder)
+
+    return jsonify(files)
+
 if __name__ == "__main__":
     app.run(debug=True)
+

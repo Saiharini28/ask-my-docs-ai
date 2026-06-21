@@ -19,9 +19,6 @@ embeddings = GoogleGenerativeAIEmbeddings(
 
 
 def process_pdf(pdf_path):
-    """
-    Read PDF -> Chunk -> Embed -> Save FAISS
-    """
 
     reader = PdfReader(pdf_path)
 
@@ -40,14 +37,44 @@ def process_pdf(pdf_path):
 
     chunks = splitter.split_text(text)
 
-    vectorstore = FAISS.from_texts(
-        chunks,
-        embedding=embeddings
+    metadata = [
+        {"source": os.path.basename(pdf_path)}
+        for _ in chunks
+    ]
+
+    faiss_file = os.path.join(
+        INDEX_PATH,
+        "index.faiss"
     )
+
+    if os.path.exists(faiss_file):
+
+        print("Loading existing FAISS index...")
+
+        vectorstore = FAISS.load_local(
+            INDEX_PATH,
+            embeddings,
+            allow_dangerous_deserialization=True
+        )
+
+        vectorstore.add_texts(
+            chunks,
+            metadatas=metadata
+        )
+
+    else:
+
+        print("Creating new FAISS index...")
+
+        vectorstore = FAISS.from_texts(
+            chunks,
+            embedding=embeddings,
+            metadatas=metadata
+        )
 
     vectorstore.save_local(INDEX_PATH)
 
-    print("FAISS index saved successfully.")
+    print("FAISS updated successfully.")
 
 
 def load_vectorstore():
@@ -75,7 +102,7 @@ def ask_question(query):
 
     docs = vectorstore.similarity_search(
         query,
-        k=2
+        k=4
     )
 
     context = "\n".join(
@@ -99,7 +126,25 @@ Question:
 
     response = llm.invoke(prompt)
 
-    return response.content
+    sources = set()
+
+    for doc in docs:
+
+        if "source" in doc.metadata:
+            sources.add(
+                doc.metadata["source"]
+            )
+
+    final_answer = response.content
+
+    if sources:
+
+        final_answer += "\n\nSources:\n"
+
+        for source in sources:
+            final_answer += f"- {source}\n"
+
+    return final_answer
 
 
 # Initial PDF setup (first run only)
