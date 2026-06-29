@@ -102,7 +102,7 @@ def ask_question(query):
 
     docs = vectorstore.similarity_search(
         query,
-        k=4
+        k=1
     )
 
     context = "\n".join(
@@ -126,23 +126,15 @@ Question:
 
     response = llm.invoke(prompt)
 
-    sources = set()
+    source = docs[0].metadata.get(
+        "source",
+        "Unknown"
+    )
 
-    for doc in docs:
-
-        if "source" in doc.metadata:
-            sources.add(
-                doc.metadata["source"]
-            )
-
-    final_answer = response.content
-
-    if sources:
-
-        final_answer += "\n\nSources:\n"
-
-        for source in sources:
-            final_answer += f"- {source}\n"
+    final_answer = (
+        response.content +
+        f"\n\nSource: {source}"
+    )
 
     return final_answer
 
